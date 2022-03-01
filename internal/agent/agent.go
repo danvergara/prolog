@@ -60,7 +60,6 @@ func New(config Config) (*Agent, error) {
 		Config:    config,
 		shutdowns: make(chan struct{}),
 	}
-
 	setup := []func() error{
 		a.setupLogger,
 		a.setupLog,
@@ -138,9 +137,10 @@ func (a *Agent) setupMembership() error {
 	}
 	var opts []grpc.DialOption
 	if a.Config.PeerTLSConfig != nil {
-		return err
+		opts = append(opts, grpc.WithTransportCredentials(
+			credentials.NewTLS(a.Config.PeerTLSConfig),
+		))
 	}
-
 	conn, err := grpc.Dial(rpcAddr, opts...)
 	if err != nil {
 		return err

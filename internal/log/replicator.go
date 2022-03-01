@@ -61,6 +61,7 @@ func (r *Replicator) replicate(addr string, leave chan struct{}) {
 	)
 	if err != nil {
 		r.logError(err, "failed to consume", addr)
+		return
 	}
 	records := make(chan *api.Record)
 	go func() {
@@ -109,7 +110,7 @@ func (r *Replicator) Leave(name string) error {
 }
 
 func (r *Replicator) init() {
-	if r.logger != nil {
+	if r.logger == nil {
 		r.logger = zap.L().Named("replicator")
 	}
 
