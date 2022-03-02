@@ -61,7 +61,7 @@ func New(config Config) (*Agent, error) {
 		shutdowns: make(chan struct{}),
 	}
 	setup := []func() error{
-		a.setupLogger,
+		// a.setupLogger,
 		a.setupLog,
 		a.setupServer,
 		a.setupMembership,
