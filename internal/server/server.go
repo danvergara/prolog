@@ -50,7 +50,7 @@ var _ api.LogServer = (*grpcServer)(nil)
 
 // NewGRPCServer creates a gRPC server and register the service
 // to that server.
-func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
+func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	logger := zap.L().Named("server")
 	zapOpts := []grpc_zap.Option{
 		grpc_zap.WithDurationField(
@@ -69,7 +69,7 @@ func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, err
 		return nil, err
 	}
 
-	opts = append(opts, grpc.StreamInterceptor(
+	grpcOpts = append(grpcOpts, grpc.StreamInterceptor(
 		grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_zap.StreamServerInterceptor(logger, zapOpts...),
@@ -81,7 +81,7 @@ func NewGRPCServer(config *Config, opts ...grpc.ServerOption) (*grpc.Server, err
 	)),
 		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 	)
-	gsrv := grpc.NewServer(opts...)
+	gsrv := grpc.NewServer(grpcOpts...)
 	srv, err := newgrpcServer(config)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,6 @@ func (s *grpcServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_Consu
 			if err = stream.Send(res); err != nil {
 				return err
 			}
-
 			req.Offset++
 		}
 	}
@@ -187,12 +186,16 @@ func authenticate(ctx context.Context) (context.Context, error) {
 	if !ok {
 		return ctx, status.New(
 			codes.Unknown,
-			"couldn't find perr info",
+			"couldn't find peer info",
 		).Err()
 	}
 	if peer.AuthInfo == nil {
-		return context.WithValue(ctx, subjectContextKey{}, ""), nil
+		return ctx, status.New(
+			codes.Unauthenticated,
+			"no transport security being used",
+		).Err()
 	}
+
 	tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
 	subject := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
 	ctx = context.WithValue(ctx, subjectContextKey{}, subject)
