@@ -49,7 +49,7 @@ type Config struct {
 	Bootstrap       bool
 }
 
-// RPCAddr returns the RPC addres, derived from the BindAddr attribute.
+// RPCAddr returns the RPC address, derived from the BindAddr attribute.
 func (c Config) RPCAddr() (string, error) {
 	host, _, err := net.SplitHostPort(c.BindAddr)
 	if err != nil {
@@ -66,7 +66,7 @@ func New(config Config) (*Agent, error) {
 		shutdowns: make(chan struct{}),
 	}
 	setup := []func() error{
-		// a.setupLogger,
+		a.setupLogger,
 		a.setupMux,
 		a.setupLog,
 		a.setupServer,
@@ -147,8 +147,9 @@ func (a *Agent) setupServer() error {
 		a.Config.ACLPolicyFile,
 	)
 	serverConfig := &server.Config{
-		CommitLog:  a.log,
-		Authorizer: authorizer,
+		CommitLog:   a.log,
+		Authorizer:  authorizer,
+		GetServerer: a.log,
 	}
 	var opts []grpc.ServerOption
 	if a.Config.ServerTLSConfig != nil {
